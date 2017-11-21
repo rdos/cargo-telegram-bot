@@ -43,7 +43,7 @@ def button(bot, update):
                           chat_id=chat_id,
                           message_id=query.message.message_id)
 
-    conn = sqlite3.connect('C:/tt/cargo.sqlite')
+    conn = sqlite3.connect('C:/tt/cargo-telegram-bot/cargo.sqlite')
     sql_text = ''' INSERT INTO notice_t(user_name,user_id,chat_id,message_id)
               VALUES(?,?,?,?) '''
     cur = conn.cursor()
