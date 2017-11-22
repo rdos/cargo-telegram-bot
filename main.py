@@ -7,12 +7,18 @@
 
 import logging
 import sqlite3
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from telegram.ext import MessageHandler, Filters
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     levePl=logging.INFO)
 logger = logging.getLogger(__name__)
+updater = Updater("478909799:AAEuh8FPg_kEcbAJmB5O8En8Rmbzly2rT_I")
+
+reply_keyboard = [['Age', 'Favourite colour'],
+                  ['Number of siblings', 'Something else...'],
+                  ['Done']]
 
 
 def start(bot, update):
@@ -25,7 +31,10 @@ def start(bot, update):
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+    # update.message.reply_text('', reply_markup=markup)
     update.message.reply_text('Please choose:', reply_markup=reply_markup)
+
 
 
 def button(bot, update):
@@ -60,16 +69,21 @@ def error(bot, update, error):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, error)
 
+def echo(bot, update):
+    """Echo the user message."""
+    update.message.reply_text(update.message.text)
 
 def main():
     # Create the Updater and pass it your bot's token.
-    updater = Updater("478909799:AAEuh8FPg_kEcbAJmB5O8En8Rmbzly2rT_I")
+    # updater = Updater("478909799:AAEuh8FPg_kEcbAJmB5O8En8Rmbzly2rT_I")
 
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('ttest', start))
     updater.dispatcher.add_handler(CallbackQueryHandler(button))
     updater.dispatcher.add_handler(CommandHandler('help', help))
     updater.dispatcher.add_error_handler(error)
+
+    updater.dispatcher.add_handler(MessageHandler(Filters.text, start))
 
     # Start the Bot
     updater.start_polling()
