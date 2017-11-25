@@ -1,70 +1,67 @@
 # -*- coding: utf-8 -*-
-import config
+
 import telebot
-from telebot import types
+import config
+import dbworker
 
 bot = telebot.TeleBot(config.token)
 
-# @bot.message_handler(func=lambda message: True)
-# def any_message(message):
-#     bot.reply_to(message, "Sam {}".format(message.text))
+
+# Начало диалога
+@bot.message_handler(commands=["start"])
+def cmd_start(message):
+    state = dbworker.get_current_state(message.chat.id)
+    if state == config.States.S_ENTER_NAME:
+        bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить своё имя, но так и не сделал этого :( Жду...")
+    elif state == config.States.S_ENTER_AGE:
+        bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить свой возраст, но так и не сделал этого :( Жду...")
+    elif state == config.States.S_SEND_PIC:
+        bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить картинку, но так и не сделал этого :( Жду...")
+    else:  # Под "остальным" понимаем состояние "0" - начало диалога
+        bot.send_message(message.chat.id, "Привет! Как я могу к тебе обращаться?")
+        dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME)
 
 
-# @bot.edited_message_handler(func=lambda message: True)
-# def edit_message(message):
-#     bot.edit_message_text(chat_id=message.chat.id,
-#                           text= "Sam {}".format(message.text),
-#                           message_id=message.message_id + 1)
-
-# @bot.message_handler(content_types=["text"])
-# def default_test(message):
-#     keyboard = types.InlineKeyboardMarkup()
-#     url_button = types.InlineKeyboardButton(text="Перейти на Яндекс", url="https://ya.ru")
-#     keyboard.add(url_button)
-#     bot.send_message(message.chat.id, "Привет! Нажми на кнопку и перейди в поисковик.", reply_markup=keyboard)
+# По команде /reset будем сбрасывать состояния, возвращаясь к началу диалога
+@bot.message_handler(commands=["reset"])
+def cmd_reset(message):
+    bot.send_message(message.chat.id, "Что ж, начнём по-новой. Как тебя зовут?")
+    dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME)
 
 
-# Обычный режим
-@bot.message_handler(content_types=["text"])
-def any_msg(message):
-    print('any_msg')
-    # print(message['text'])
-    keyboard = types.InlineKeyboardMarkup()
-    callback_button = types.InlineKeyboardButton(text="Нажми меня", callback_data="test")
-    keyboard.add(callback_button)
-    callback_button1 = types.InlineKeyboardButton(text="Нажми меня2", callback_data="test")
-    keyboard.add(callback_button1)
-    bot.send_message(message.chat.id, "Я – сообщение из обычного режима", reply_markup=keyboard)
+@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_NAME)
+def user_entering_name(message):
+    # В случае с именем не будем ничего проверять, пусть хоть "25671", хоть Евкакий
+    bot.send_message(message.chat.id, "Отличное имя, запомню! Теперь укажи, пожалуйста, свой возраст.")
+    dbworker.set_state(message.chat.id, config.States.S_ENTER_AGE)
 
 
-# Инлайн-режим с непустым запросом
-@bot.inline_handler(lambda query: len(query.query) > 0)
-def query_text(query):
-    kb = types.InlineKeyboardMarkup()
-    # Добавляем колбэк-кнопку с содержимым "test"
-    kb.add(types.InlineKeyboardButton(text="Нажми меня3", callback_data="test"))
-    results = []
-    single_msg = types.InlineQueryResultArticle(
-        id="1", title="Press me",
-        input_message_content=types.InputTextMessageContent(message_text="Я – сообщение из инлайн-режима"),
-        reply_markup=kb
-    )
-    results.append(single_msg)
-    bot.answer_inline_query(query.id, results)
+@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_AGE)
+def user_entering_age(message):
+    # А вот тут сделаем проверку
+    if not message.text.isdigit():
+        # Состояние не меняем, поэтому только выводим сообщение об ошибке и ждём дальше
+        bot.send_message(message.chat.id, "Что-то не так, попробуй ещё раз!")
+        return
+    # На данном этапе мы уверены, что message.text можно преобразовать в число, поэтому ничем не рискуем
+    if int(message.text) < 5 or int(message.text) > 100:
+        bot.send_message(message.chat.id, "Какой-то странный возраст. Не верю! Отвечай честно.")
+        return
+    else:
+        # Возраст введён корректно, можно идти дальше
+        bot.send_message(message.chat.id, "Когда-то и мне было столько лет...эх... Впрочем, не будем отвлекаться. "
+                                          "Отправь мне какую-нибудь фотографию.")
+        dbworker.set_state(message.chat.id, config.States.S_SEND_PIC)
 
 
-# В большинстве случаев целесообразно разбить этот хэндлер на несколько маленьких
-@bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
-    print(call)
-    # Если сообщение из чата с ботом
-    if call.message:
-        if call.data == "test":
-            bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Пыщь")
-    # Если сообщение из инлайн-режима
-    elif call.inline_message_id:
-        if call.data == "test":
-            bot.edit_message_text(inline_message_id=call.inline_message_id, text="Бдыщь")
+@bot.message_handler(content_types=["photo"],
+                     func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_SEND_PIC)
+def user_sending_photo(message):
+    # То, что это фотография, мы уже проверили в хэндлере, никаких дополнительных действий не нужно.
+    bot.send_message(message.chat.id, "Отлично! Больше от тебя ничего не требуется. Если захочешь пообщаться снова - "
+                     "отправь команду /start или /reset.")
+    dbworker.set_state(message.chat.id, config.States.S_START)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     bot.polling(none_stop=True)
