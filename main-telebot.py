@@ -3,9 +3,10 @@
 import telebot
 import config
 import dbworker
+from dbsqlite import DB
 
 bot = telebot.TeleBot(config.token)
-
+db = DB()
 
 # Начало диалога
 @bot.message_handler(commands=["start"])
