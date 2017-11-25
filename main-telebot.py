@@ -4,13 +4,22 @@ import telebot
 import config
 import dbworker
 from dbsqlite import DB
+from telebot import types
 
 bot = telebot.TeleBot(config.token)
 db = DB()
 
+# def add_keyboard():
+#     # Эти параметры для клавиатуры необязательны, просто для удобства
+#     keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+#     button_phone = types.KeyboardButton(text="Отправить номер телефона", request_contact=True)
+#     button_geo = types.KeyboardButton(text="Отправить местоположение", request_location=True)
+#     keyboard.add(button_phone, button_geo)
+
 # Начало диалога
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
+    # add_keyboard()
     state = dbworker.get_current_state(message.chat.id)
     if state == config.States.S_ENTER_NAME:
         bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить своё имя, но так и не сделал этого :( Жду...")
@@ -26,7 +35,12 @@ def cmd_start(message):
 # По команде /reset будем сбрасывать состояния, возвращаясь к началу диалога
 @bot.message_handler(commands=["reset"])
 def cmd_reset(message):
-    bot.send_message(message.chat.id, "Что ж, начнём по-новой. Как тебя зовут?")
+    # Эти параметры для клавиатуры необязательны, просто для удобства
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button_phone = types.KeyboardButton(text="Отправить номер телефона", request_contact=True)
+    button_geo = types.KeyboardButton(text="Отправить местоположение", request_location=True)
+    keyboard.add(button_phone, button_geo)
+    bot.send_message(message.chat.id, "Что ж, начнём по-новой. Как тебя зовут?", reply_markup=keyboard)
     dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME)
 
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlite3
-
+import config
 
 class DB:
 	def __init__(self):
