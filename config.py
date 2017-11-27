@@ -16,6 +16,7 @@ class States(Enum):
     поэтому и тут будем использовать тоже строки (str)
     """
     START_S = "START"  # Начало нового диалога
-    ENTER_NAME_S = "ENTER_NAME"
-    ENTER_AGE_S = "ENTER_AGE"
-    SEND_PIC_S = "SEND_PIC"
+    NEW_NOTICE_ADDRESS_S = "NEW_NOTICE_ADDRESS"
+    NEW_NOTICE_MASS_S = "NEW_NOTICE_MASS"
+    NEW_NOTICE_SIZE_S = "NEW_NOTICE_SIZE"
+    NEW_NOTICE_NAME_S = "NEW_NOTICE_NAME"
