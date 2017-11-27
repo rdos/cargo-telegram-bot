@@ -56,7 +56,7 @@ def get_calendar(message):
     date = (now.year,now.month)
     current_shown_dates[chat_id] = date #Saving the current date in a dict
     markup= create_calendar(now.year,now.month)
-    bot.send_message(message.chat.id, "Please, choose a date", reply_markup=markup)
+    bot.send_message(message.chat.id, "Выберите дату готовности груза", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda call: call.data[0:13] == 'calendar-day-')
 def get_day(call):
@@ -65,8 +65,9 @@ def get_day(call):
     if(saved_date is not None):
         day=call.data[13:]
         date = datetime.datetime(int(saved_date[0]),int(saved_date[1]),int(day),0,0,0)
+        bot.delete_message(chat_id, call.message.message_id)
         bot.send_message(chat_id, str(date))
-        bot.answer_callback_query(call.id, text="")
+        bot.answer_callback_query(call.id, text="Хорошо")
 
     else:
         #Do something to inform of the error
@@ -85,7 +86,7 @@ def next_month(call):
         date = (year,month)
         current_shown_dates[chat_id] = date
         markup= create_calendar(year,month)
-        bot.edit_message_text("Please, choose a date", call.from_user.id, call.message.message_id, reply_markup=markup)
+        bot.edit_message_text("Выберите дату готовности груза", call.from_user.id, call.message.message_id, reply_markup=markup)
         bot.answer_callback_query(call.id, text="")
     else:
         #Do something to inform of the error
@@ -104,7 +105,7 @@ def previous_month(call):
         date = (year,month)
         current_shown_dates[chat_id] = date
         markup= create_calendar(year,month)
-        bot.edit_message_text("Please, choose a date", call.from_user.id, call.message.message_id, reply_markup=markup)
+        bot.edit_message_text("Выберите дату готовности груза", call.from_user.id, call.message.message_id, reply_markup=markup)
         bot.answer_callback_query(call.id, text="")
     else:
         #Do something to inform of the error
@@ -124,22 +125,25 @@ def cmd_reset(message):
     
     # db.set_user_state(message.chat.id, config.States.ENTER_NAME_S, message.from_user.first_name)
 
+@bot.message_handler(func=lambda message: db.get_user_state(message.chat.id) == config.States.NEW_NOTICE_ADDRESS_S)
+def user_entering_address(message):
+    # В случае с именем не будем ничего проверять, пусть хоть "25671", хоть Евкакий
+    bot.send_message(message.chat.id, "Отличное адрес! Теперь укажи, пожалуйста,  вес(в килограммах):")
+    db.set_user_state(message.chat.id, config.States.NEW_NOTICE_MASS_S, message.from_user.first_name)
+
 
 @bot.message_handler(content_types=["text"])
 def user_start(message):
     print("user_startuser_start")
-    print(message.text.encode('utf-8'))
+    print(current_shown_dates)
+    print(message.message_id)
     if message.text.encode('utf-8') == CAPTION_BTN_NEW:
         print('CAPTION_BTN_NEW')
+        bot.send_message(message.chat.id, "Введите адрес доставки", reply_markup=types.ReplyKeyboardRemove())
+        db.set_user_state(message.chat.id, config.States.NEW_NOTICE_ADDRESS_S, message.from_user.first_name)
     # В случае с именем не будем ничего проверять, пусть хоть "25671", хоть Евкакий
-    # db.set_user_state(message.chat.id, config.States.ENTER_AGE_S, message.from_user.first_name)
 
 
-# @bot.message_handler(func=lambda message: db.get_user_state(message.chat.id) == config.States.ENTER_NAME_S)
-# def user_entering_name(message):
-#     # В случае с именем не будем ничего проверять, пусть хоть "25671", хоть Евкакий
-#     bot.send_message(message.chat.id, "Отличное имя, запомню! Теперь укажи, пожалуйста, свой возраст.")
-#     db.set_user_state(message.chat.id, config.States.ENTER_AGE_S, message.from_user.first_name)
 
 
 # @bot.message_handler(func=lambda message: db.get_user_state(message.chat.id) == config.States.ENTER_AGE_S)
