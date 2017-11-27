@@ -7,7 +7,7 @@ from enum import Enum
 
 token = '478909799:AAEuh8FPg_kEcbAJmB5O8En8Rmbzly2rT_I'
 
-db_file = "database.vdb"
+db_file = 'cargo.sqlite'
 
 
 class States(Enum):
@@ -15,7 +15,7 @@ class States(Enum):
     Мы используем БД Vedis, в которой хранимые значения всегда строки,
     поэтому и тут будем использовать тоже строки (str)
     """
-    S_START = "0"  # Начало нового диалога
-    S_ENTER_NAME = "1"
-    S_ENTER_AGE = "2"
-    S_SEND_PIC = "3"
+    START_S = "START"  # Начало нового диалога
+    ENTER_NAME_S = "ENTER_NAME"
+    ENTER_AGE_S = "ENTER_AGE"
+    SEND_PIC_S = "SEND_PIC"

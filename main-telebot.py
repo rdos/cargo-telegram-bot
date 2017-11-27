@@ -2,7 +2,6 @@
 
 import telebot
 import config
-import dbworker
 from dbsqlite import DB
 from telebot import types
 
@@ -20,16 +19,16 @@ db = DB()
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
     # add_keyboard()
-    state = dbworker.get_current_state(message.chat.id)
-    if state == config.States.S_ENTER_NAME:
+    state = db.get_user_state(message.chat.id)
+    if state == config.States.ENTER_NAME_S:
         bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить своё имя, но так и не сделал этого :( Жду...")
-    elif state == config.States.S_ENTER_AGE:
+    elif state == config.States.ENTER_AGE_S:
         bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить свой возраст, но так и не сделал этого :( Жду...")
-    elif state == config.States.S_SEND_PIC:
+    elif state == config.States.SEND_PIC_S:
         bot.send_message(message.chat.id, "Кажется, кто-то обещал отправить картинку, но так и не сделал этого :( Жду...")
     else:  # Под "остальным" понимаем состояние "0" - начало диалога
         bot.send_message(message.chat.id, "Привет! Как я могу к тебе обращаться?")
-        dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME)
+        db.set_user_state(message.chat.id, config.States.ENTER_NAME_S)
 
 
 # По команде /reset будем сбрасывать состояния, возвращаясь к началу диалога
@@ -41,17 +40,17 @@ def cmd_reset(message):
     button_geo = types.KeyboardButton(text="Отправить местоположение", request_location=True)
     keyboard.add(button_phone, button_geo)
     bot.send_message(message.chat.id, "Что ж, начнём по-новой. Как тебя зовут?", reply_markup=keyboard)
-    dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME)
+    db.set_user_state(message.chat.id, config.States.ENTER_NAME_S)
 
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_NAME)
+@bot.message_handler(func=lambda message: db.get_user_state(message.chat.id) == config.States.ENTER_NAME_S)
 def user_entering_name(message):
     # В случае с именем не будем ничего проверять, пусть хоть "25671", хоть Евкакий
     bot.send_message(message.chat.id, "Отличное имя, запомню! Теперь укажи, пожалуйста, свой возраст.")
-    dbworker.set_state(message.chat.id, config.States.S_ENTER_AGE)
+    db.set_user_state(message.chat.id, config.States.ENTER_AGE_S)
 
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_ENTER_AGE)
+@bot.message_handler(func=lambda message: db.get_user_state(message.chat.id) == config.States.ENTER_AGE_S)
 def user_entering_age(message):
     # А вот тут сделаем проверку
     if not message.text.isdigit():
@@ -66,16 +65,16 @@ def user_entering_age(message):
         # Возраст введён корректно, можно идти дальше
         bot.send_message(message.chat.id, "Когда-то и мне было столько лет...эх... Впрочем, не будем отвлекаться. "
                                           "Отправь мне какую-нибудь фотографию.")
-        dbworker.set_state(message.chat.id, config.States.S_SEND_PIC)
+        db.set_user_state(message.chat.id, config.States.SEND_PIC_S)
 
 
 @bot.message_handler(content_types=["photo"],
-                     func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_SEND_PIC)
+                     func=lambda message: db.get_user_state(message.chat.id) == config.States.SEND_PIC_S)
 def user_sending_photo(message):
     # То, что это фотография, мы уже проверили в хэндлере, никаких дополнительных действий не нужно.
     bot.send_message(message.chat.id, "Отлично! Больше от тебя ничего не требуется. Если захочешь пообщаться снова - "
                      "отправь команду /start или /reset.")
-    dbworker.set_state(message.chat.id, config.States.S_START)
+    db.set_user_state(message.chat.id, config.States.START_S)
 
 
 if __name__ == "__main__":
